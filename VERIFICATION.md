@@ -124,18 +124,19 @@ delete from public.users where email = 'jordansdevicesinfo@gmail.com';
 
 ---
 
-## Town animation — tiled map + path-walking character (post-09 enhancement)
+## Town — tiled world + path-walking character + follow camera (post-09 enhancement)
 
 **Status:** code complete, build + lint green, pathfinding reachability verified for all 8 buildings. Awaiting in-app confirmation.
 
 ### Not yet confirmed
-- [ ] Map renders as a 10×10 tiled grid (grass + dirt paths), buildings are pixel sprites, character is a pixel sprite — NO emoji on the map
-- [ ] Tap a building → character **walks a tile route around buildings** (prefers the dirt paths), facing its direction with a 2-frame walk cycle, then the modal opens on arrival
-- [ ] Tap a path/grass tile → character walks there, no modal
-- [ ] Completed buildings get a mint glow + ✓ badge; Tavern dims until "I drank"
-- [ ] All-8 still fires confetti + DAY COMPLETE banner
+- [ ] World is a **16×16 tiled town** (grass + dirt-path avenues + decorative trees/bushes), bigger than the visible window — NO emoji on the map
+- [ ] **Camera follows the character**: walking pans the world to keep the character centred, and stops panning at the world edges (character walks to the edge instead)
+- [ ] Tap a building → character **walks a route around buildings/decor** (prefers paths), facing its direction with a 2-frame walk cycle, modal opens on arrival
+- [ ] Tap a path/grass tile (within view) → character walks there, no modal
+- [ ] Completed buildings get a mint glow + ✓; Tavern dims until "I drank"
+- [ ] All-8 still fires confetti + DAY COMPLETE banner (banner stays centred in the viewport)
 - [ ] Saves still persist; failed save still toasts
-- [ ] Responsive: narrow the window — tiles/character/buildings scale together, no overflow
+- [ ] Responsive: narrow the window — the viewport stays square and the camera still works (you just see fewer tiles)
 
 ### Notes
 - Art is **generated placeholder** pixel art (`scripts/gen_town_assets.py` → `public/town/*.png`): grass/path tiles, 4-dir × 2-frame character sheet, 8 buildings. Basic but real; swap any file for nicer art (Kenney/Aseprite) with zero code change.
