@@ -88,12 +88,12 @@ Cross it off here so you can see where you are:
 - [x] 02 — Design system
 - [x] 03 — Auth
 - [x] 04 — Town map
-- [ ] 05 — Friends screen
-- [ ] 06 — History screen
-- [ ] 06b — Character builder
-- [ ] 07 — Onboarding
-- [ ] 08 — Profile screen
-- [ ] 09 — PWA config
+- [x] 05 — Friends screen
+- [x] 06 — History screen
+- [x] 06b — Character builder
+- [x] 07 — Onboarding
+- [x] 08 — Profile screen
+- [x] 09 — PWA config
 - [ ] 10 — Deploy
 - [ ] 11 — Invite friends
 

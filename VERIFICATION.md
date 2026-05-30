@@ -107,6 +107,23 @@ delete from public.users where email = 'jordansdevicesinfo@gmail.com';
 
 ---
 
+## 09 — PWA Config
+
+**Status:** code complete, build verified (manifest + sw.js + 23 precached entries generated). Awaiting on-device confirmation.
+
+### Not yet confirmed (needs `npm run preview` or deploy — SW is OFF in `npm run dev`)
+- [ ] `npm run preview` → DevTools → Application → Manifest shows the 75 HARD manifest
+- [ ] Application → Service Workers shows the SW registered
+- [ ] On iPhone Safari: Share → Add to Home Screen shows the pixel "75" icon
+- [ ] Installed icon opens fullscreen (no URL bar), cream splash
+- [ ] Airplane-mode relaunch still opens (cached shell)
+
+### Notes
+- Icons are **placeholder** pixel "75" on peach/ink (generated, RGB no-alpha so iOS accepts them). Swap for nicer art anytime — just replace the files in `public/`.
+- Real install test is easiest **after deploy** (step 10) over HTTPS, or via `npm run preview --host` + your phone on the same wifi (local IP).
+
+---
+
 ## Cross-cutting / deferred (not tied to one step)
 
 - [ ] **Pixel-art sprites** — town buildings + character are emoji placeholders. Real sprites drop into `public/town/`; swap points already marked in `Today.jsx`. (Intentional per `reference/decisions.md` — validate mechanic first.)
