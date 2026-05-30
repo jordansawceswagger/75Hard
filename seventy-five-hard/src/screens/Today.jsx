@@ -4,22 +4,13 @@ import { useAuth } from '../lib/auth';
 import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
+import { GRID, TILES, BUILDINGS, START_CELL, isWalkable, findPath, dirBetween } from '../lib/townMap';
 import PixelConfetti from '../components/PixelConfetti';
+import TownCharacter from '../components/TownCharacter';
 import BuildingModal from '../components/BuildingModal';
 
-const MAP_SIZE = 480; // px, matches max-width
-
-// Building layout — x/y are top-left of the building sprite (32x32)
-const BUILDINGS = [
-  { id: 'library',  task: 'reading',  x:  40, y:  40, label: 'LIBRARY',       emoji: '📚' },
-  { id: 'photo',    task: 'photo',    x: 280, y:  40, label: 'PHOTO STUDIO',  emoji: '📸' },
-  { id: 'well',     task: 'water',    x:  60, y: 200, label: 'WELL',          emoji: '⛲' },
-  { id: 'park',     task: 'outdoor',  x: 380, y: 200, label: 'PARK',          emoji: '🌳' },
-  { id: 'gym',      task: 'gym',      x:  40, y: 360, label: 'GYM',           emoji: '🏋️' },
-  { id: 'kitchen',  task: 'diet',     x: 200, y: 380, label: 'KITCHEN',       emoji: '🍳' },
-  { id: 'inn',      task: 'sleep',    x: 360, y: 360, label: 'INN',           emoji: '🛏️' },
-  { id: 'tavern',   task: 'alcohol',  x: 200, y: 220, label: 'TAVERN',        emoji: '🍺' },
-];
+const STEP_MS = 130;      // ms per tile of walking
+const CELL = 100 / GRID;  // one tile as a % of the map
 
 const EMPTY_LOG = {
   workout_1: false, workout_2_outdoor: false, diet: false,
@@ -27,7 +18,7 @@ const EMPTY_LOG = {
   no_alcohol: true, sleep_hours: 0,
 };
 
-// Map task slug → which log field shows "complete" for that building
+// Map task slug -> which log field shows "complete" for that building
 const taskComplete = {
   gym:     log => log.workout_1,
   outdoor: log => log.workout_2_outdoor,
@@ -44,10 +35,17 @@ export default function Today() {
   const [log, setLog] = useState(EMPTY_LOG);
   const [loading, setLoading] = useState(true);
   const [confetti, setConfetti] = useState(0);
-  const [charPos, setCharPos] = useState({ x: MAP_SIZE / 2 - 16, y: MAP_SIZE / 2 - 16 });
   const [openTask, setOpenTask] = useState(null);
   const wasComplete = useRef(false);
   const dayNumber = profile ? daysSince(profile.start_date) : 1;
+
+  // Character walk state
+  const [charCell, setCharCell] = useState(START_CELL);
+  const [dir, setDir] = useState('down');
+  const [frame, setFrame] = useState(0);
+  const walkingRef = useRef(false);
+  const timerRef = useRef(null);
+  const mapRef = useRef(null);
 
   // Load today's log (works with or without a profile row yet)
   useEffect(() => {
@@ -64,7 +62,7 @@ export default function Today() {
     })();
   }, [session]);
 
-  // Watch for first all-complete → confetti
+  // Watch for first all-complete -> confetti
   useEffect(() => {
     if (log.all_complete && !wasComplete.current) {
       sfx.play('day_done');
@@ -73,10 +71,12 @@ export default function Today() {
     }
   }, [log.all_complete]);
 
+  // Clear any pending walk timer on unmount
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
   async function update(patch) {
     const next = { ...log, ...patch };
     setLog(next);
-    // Only send writable columns — never the generated all_complete or db defaults.
     const { data, error } = await supabase
       .from('daily_logs')
       .upsert(
@@ -105,24 +105,46 @@ export default function Today() {
     if (data) setLog(data);
   }
 
-  function handleBuildingTap(b) {
+  // Walk the character cell-by-cell along the computed route, then onArrive().
+  function walkTo(goal, onArrive) {
+    if (walkingRef.current) return; // one walk at a time
+    const path = findPath(charCell, goal);
+    if (!path.length) { onArrive?.(); return; }
+    walkingRef.current = true;
     sfx.play('tap');
-    // Walk character to building
-    setCharPos({ x: b.x, y: b.y + 36 }); // position character just below the building
-    // Open the task modal after walk animation completes
-    setTimeout(() => setOpenTask(b), 350);
+    let i = 0;
+    let prev = charCell;
+    const step = () => {
+      if (i >= path.length) {
+        walkingRef.current = false;
+        setFrame(0);
+        onArrive?.();
+        return;
+      }
+      const next = path[i];
+      setDir(dirBetween(prev, next));
+      setFrame(f => (f === 0 ? 1 : 0));
+      setCharCell(next);
+      prev = next;
+      i++;
+      timerRef.current = setTimeout(step, STEP_MS);
+    };
+    step();
+  }
+
+  function handleBuildingTap(b) {
+    walkTo(b.approach, () => {
+      setDir(dirBetween(b.approach, b)); // face the building
+      setOpenTask(b);
+    });
   }
 
   function handleMapTap(e) {
-    // Walk to clicked point (no interaction)
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left - 16);
-    const y = Math.round(e.clientY - rect.top - 16);
-    sfx.play('tap');
-    setCharPos({
-      x: Math.max(0, Math.min(MAP_SIZE - 32, x)),
-      y: Math.max(0, Math.min(MAP_SIZE - 32, y)),
-    });
+    if (!mapRef.current || walkingRef.current) return;
+    const rect = mapRef.current.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / rect.width * GRID);
+    const row = Math.floor((e.clientY - rect.top) / rect.height * GRID);
+    if (isWalkable(col, row)) walkTo({ col, row });
   }
 
   if (loading) return <p>Loading...</p>;
@@ -135,21 +157,35 @@ export default function Today() {
       </div>
 
       <div
+        ref={mapRef}
         onClick={handleMapTap}
         style={{
           position: 'relative',
-          width: MAP_SIZE,
-          height: MAP_SIZE,
+          width: 480,
           maxWidth: '100%',
           aspectRatio: '1 / 1',
           margin: '0 auto',
-          background: '#A8D88A', // grass green; swap for map-bg.png when ready
           border: '4px solid var(--ink)',
           overflow: 'hidden',
           cursor: 'pointer',
-          imageRendering: 'pixelated',
         }}
       >
+        {/* Tile layer */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'grid',
+          gridTemplateColumns: `repeat(${GRID}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID}, 1fr)`,
+        }}>
+          {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => (
+            <div key={`${c},${r}`} style={{
+              backgroundImage: `url(/town/${t === 'P' ? 'path' : 'grass'}.png)`,
+              backgroundSize: '100% 100%',
+              imageRendering: 'pixelated',
+            }} />
+          )))}
+        </div>
+
         {/* Buildings */}
         {BUILDINGS.map(b => {
           const done = taskComplete[b.task](log);
@@ -159,37 +195,37 @@ export default function Today() {
               onClick={(e) => { e.stopPropagation(); handleBuildingTap(b); }}
               style={{
                 position: 'absolute',
-                left: b.x, top: b.y,
-                width: 64, height: 64,
-                padding: 0, margin: 0, border: 'none', cursor: 'pointer',
-                background: 'transparent',
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                left: `${b.col * CELL}%`,
+                top: `${b.row * CELL}%`,
+                width: `${CELL}%`,
+                height: `${CELL}%`,
+                padding: 0, border: 'none', background: 'transparent',
+                cursor: 'pointer', zIndex: 4,
               }}
             >
-              {/* Sprite — placeholder emoji for now; swap with <img src={`/town/${b.id}.png`} /> */}
-              <div
+              <img
+                src={`/town/${b.id}.png`}
+                alt={b.label}
+                className="pixelated"
                 style={{
-                  width: 56, height: 56,
-                  fontSize: 40, lineHeight: '56px', textAlign: 'center',
-                  background: done ? 'var(--mint)' : '#fff',
-                  border: '3px solid var(--ink)',
-                  boxShadow: done ? '0 0 0 2px var(--mint)' : '2px 2px 0 var(--ink)',
-                  opacity: b.task === 'alcohol' && !done ? 0.4 : 1,
+                  width: '100%', height: '100%', display: 'block',
+                  opacity: b.task === 'alcohol' && !done ? 0.45 : 1,
+                  filter: done ? 'drop-shadow(0 0 3px var(--mint)) drop-shadow(0 0 1px var(--mint))' : 'none',
                 }}
-              >
-                {b.emoji}
-              </div>
+              />
+              {done && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -2, fontSize: 12,
+                  textShadow: '0 0 2px #fff',
+                }}>✓</span>
+              )}
               <span style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: 7,
-                marginTop: 2,
-                color: 'var(--ink)',
-                background: 'rgba(255, 244, 224, 0.85)',
-                padding: '1px 3px',
-                whiteSpace: 'nowrap',
-              }}>
-                {b.label}
-              </span>
+                position: 'absolute', bottom: '100%', left: '50%',
+                transform: 'translateX(-50%)',
+                fontFamily: "'Press Start 2P', monospace", fontSize: 6,
+                whiteSpace: 'nowrap', color: 'var(--ink)',
+                background: 'rgba(255, 244, 224, 0.85)', padding: '0 2px',
+              }}>{b.label}</span>
             </button>
           );
         })}
@@ -201,33 +237,23 @@ export default function Today() {
             transform: 'translate(-50%, -50%)',
             background: 'var(--mint)', border: '4px solid var(--ink)',
             padding: '16px 24px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: 14,
+            fontFamily: "'Press Start 2P', monospace", fontSize: 14,
             boxShadow: '4px 4px 0 var(--shadow)',
-            pointerEvents: 'none',
+            pointerEvents: 'none', zIndex: 6,
           }}>
             DAY COMPLETE!
           </div>
         )}
 
         {/* Character */}
-        <div
-          style={{
-            position: 'absolute',
-            left: charPos.x,
-            top: charPos.y,
-            width: 32, height: 32,
-            transition: 'left 300ms steps(8), top 300ms steps(8)',
-            pointerEvents: 'none',
-            fontSize: 28,
-            lineHeight: '32px',
-            textAlign: 'center',
-            filter: 'drop-shadow(2px 2px 0 var(--ink))',
-          }}
-        >
-          {/* Placeholder character — swap with <img src="/town/character.png" /> later */}
-          🧍
-        </div>
+        <TownCharacter
+          dir={dir}
+          frame={frame}
+          leftPct={charCell.col * CELL}
+          topPct={charCell.row * CELL}
+          sizePct={CELL}
+          stepMs={STEP_MS}
+        />
       </div>
 
       {/* Task modal */}
@@ -241,7 +267,7 @@ export default function Today() {
       )}
 
       <div style={{ textAlign: 'center', marginTop: 12, fontSize: 14, opacity: 0.7 }}>
-        Tap a building to log it. Tap anywhere to wander.
+        Tap a building to log it. Tap a path to wander.
       </div>
     </>
   );

@@ -127,7 +127,14 @@ Each row has the choice, the reasoning, and the conditions under which it should
 - **Why:** Turns every task from a chore into a *place*. Changes how friends talk about logging ("did you visit the library?" vs "did you read?"). Pokemon-style framing is the whole product identity.
 - **Re-open if:** friends find the buildings confusing or hard to tap on small screens — could fall back to a hybrid (map for quick log + list for detail)
 
-### Character is one frame, no walking animation (in v1)
+### Tiled town + grid pathfinding + animated walk cycle (OVERRIDE, 2026-05-29)
+- **What changed:** The Today screen is now a real 10×10 tiled map (grass/dirt-path sprites). Tapping a task runs **A\* pathfinding** (path tiles cheaper, so the character walks the roads) and the character **walks the route tile-by-tile around buildings** with a directional **2-frame walk cycle** sprite — no more emoji sliding diagonally.
+- **Why:** Jordan wanted the Pokémon-style scape with generated paths, not emojis moving. This was the explicit re-open condition on the three decisions below.
+- **Art:** generated locally (`scripts/gen_town_assets.py` → `public/town/*.png`): grass/path tiles, a 4-dir × 2-frame character sheet, 8 building sprites. Basic but real pixels; **swappable** — drop nicer PNGs into `public/town/` with no code change.
+- **Supersedes:** the three decisions immediately below (struck). `Map is 480×480 fixed` still holds (grid renders responsively inside it).
+- **Re-open if:** you want collision detail beyond buildings, animated buildings, or real (Kenney/Aseprite) art.
+
+### ~~Character is one frame, no walking animation (in v1)~~ (superseded by the override above)
 - **Why:** 4-directional animated sprites are 4-8x the asset work. Single frame + CSS transition is 90% of the feel for 10% of the work.
 - **Re-open if:** v1 ships and you want polish; adding 4-frame walk cycles is a week 3 win
 
@@ -139,11 +146,11 @@ Each row has the choice, the reasoning, and the conditions under which it should
 - **Why:** Fits one phone screen. No camera-following logic. Eight buildings + walkable area is plenty of space.
 - **Re-open if:** you add more than 10 buildings (you shouldn't)
 
-### Building click-to-walk uses CSS transition, not pathing/collision
+### ~~Building click-to-walk uses CSS transition, not pathing/collision~~ (superseded — now A* grid pathfinding)
 - **Why:** Pathfinding is overkill for a town with no obstacles. CSS `transition` with `steps(8)` easing gets the Pokemon jerky-walk feel.
 - **Re-open if:** you add obstacles or walls (you won't)
 
-### Asset workflow: emoji placeholders → Kenney pack later
+### ~~Asset workflow: emoji placeholders → Kenney pack later~~ (partially superseded — generated sprites now; Kenney still an option)
 - **Why:** Ship the mechanic first, swap art second. Asset hunting blocks the build otherwise.
 - **Re-open if:** never. Always validate the mechanic before pouring time into art.
 

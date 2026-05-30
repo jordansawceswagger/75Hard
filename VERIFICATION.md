@@ -124,9 +124,30 @@ delete from public.users where email = 'jordansdevicesinfo@gmail.com';
 
 ---
 
+## Town animation — tiled map + path-walking character (post-09 enhancement)
+
+**Status:** code complete, build + lint green, pathfinding reachability verified for all 8 buildings. Awaiting in-app confirmation.
+
+### Not yet confirmed
+- [ ] Map renders as a 10×10 tiled grid (grass + dirt paths), buildings are pixel sprites, character is a pixel sprite — NO emoji on the map
+- [ ] Tap a building → character **walks a tile route around buildings** (prefers the dirt paths), facing its direction with a 2-frame walk cycle, then the modal opens on arrival
+- [ ] Tap a path/grass tile → character walks there, no modal
+- [ ] Completed buildings get a mint glow + ✓ badge; Tavern dims until "I drank"
+- [ ] All-8 still fires confetti + DAY COMPLETE banner
+- [ ] Saves still persist; failed save still toasts
+- [ ] Responsive: narrow the window — tiles/character/buildings scale together, no overflow
+
+### Notes
+- Art is **generated placeholder** pixel art (`scripts/gen_town_assets.py` → `public/town/*.png`): grass/path tiles, 4-dir × 2-frame character sheet, 8 buildings. Basic but real; swap any file for nicer art (Kenney/Aseprite) with zero code change.
+- Engine: `src/lib/townMap.js` (grid, layout, A* `findPath`), `src/components/TownCharacter.jsx`, rewritten `src/screens/Today.jsx`. All log/save/confetti logic preserved.
+- Tunables: `STEP_MS` (walk speed, 130ms/tile), tile layout, building/approach cells in `townMap.js`.
+- Decision override recorded in `reference/decisions.md` (2026-05-29).
+
+---
+
 ## Cross-cutting / deferred (not tied to one step)
 
-- [ ] **Pixel-art sprites** — town buildings + character are emoji placeholders. Real sprites drop into `public/town/`; swap points already marked in `Today.jsx`. (Intentional per `reference/decisions.md` — validate mechanic first.)
+- [~] **Pixel-art sprites** — DONE as generated placeholders (`public/town/*.png`); town is now real sprites, not emoji. Optional upgrade: swap for nicer Kenney/Aseprite art (same file slots, no code change). See the "Town animation" section above.
 - [ ] **App icons** — `apple-touch-icon.png`, `pwa-192/512`, `favicon.ico` not created (one harmless 404 in console). Step 10 polish.
 - [ ] **Sound effects** — currently generated placeholder beeps in `public/sfx/`. Swap for custom sfxr.me sounds for final polish.
 - [ ] **Custom SMTP** — Gmail SMTP wired for magic-link emails (replaces dev-only built-in sender). Confirmed working at sign-in.
