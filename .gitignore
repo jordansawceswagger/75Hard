@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+
+# local env / secrets (covers root and seventy-five-hard/)
+.env.local
+.env*.local
+*.local
+
+# local vector db (root + app)
+ruvector.db
+
+# os / editor
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sw?

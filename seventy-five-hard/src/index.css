@@ -1,0 +1,78 @@
+/* === KAWAII 8-BIT PALETTE === */
+:root {
+  --cream:    #FFF4E0;
+  --peach:    #FFB5A7;
+  --lavender: #C8B6FF;
+  --mint:     #B8E0D2;
+  --coral:    #FF7B7B;
+  --ink:      #2D2D44;
+  --shadow:   rgba(45, 45, 68, 0.2);
+}
+
+/* === RESET === */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport for iOS */
+}
+
+/* === TYPOGRAPHY === */
+h1, h2, h3, .pixel-display {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+}
+
+h1 { font-size: 24px; line-height: 1.6; }
+h2 { font-size: 18px; line-height: 1.6; }
+h3 { font-size: 14px; line-height: 1.6; }
+
+/* === NES.css COLOR OVERRIDES === */
+.nes-container {
+  background-color: #fff !important;
+  border-color: var(--ink) !important;
+  box-shadow: 4px 4px 0 var(--shadow) !important;
+}
+
+.nes-container.is-rounded {
+  border-radius: 0 !important; /* pixel = no rounding */
+}
+
+/* === IMAGES === */
+img.pixelated,
+.pixelated img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* === CONFETTI === */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(105vh) rotate(360deg); opacity: 1; }
+}
+
+/* === SAFE AREA (iPhone notch) === */
+@supports (padding: max(0px)) {
+  #root {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
