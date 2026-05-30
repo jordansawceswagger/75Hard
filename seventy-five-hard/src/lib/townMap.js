@@ -38,7 +38,17 @@ export const BUILDINGS = [
   { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 12, row: 13, approach: { col: 12, row: 12 } },
 ];
 
-const BLOCKED = new Set(BUILDINGS.map(b => `${b.col},${b.row}`));
+// Decorative background houses on the perimeter (non-interactive, but solid).
+export const COTTAGES = [
+  { col: 1,  row: 0 },
+  { col: 14, row: 0 },
+  { col: 1,  row: 15 },
+];
+
+const BLOCKED = new Set([
+  ...BUILDINGS.map(b => `${b.col},${b.row}`),
+  ...COTTAGES.map(c => `${c.col},${c.row}`),
+]);
 
 export function isWalkable(col, row) {
   return col >= 0 && col < GRID && row >= 0 && row < GRID && !BLOCKED.has(`${col},${row}`);

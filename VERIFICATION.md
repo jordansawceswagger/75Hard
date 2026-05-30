@@ -146,6 +146,27 @@ delete from public.users where email = 'jordansdevicesinfo@gmail.com';
 
 ---
 
+## Species system (replaced Dicebear avatars, 2026-05-30)
+
+**Status:** code complete, build + lint green, reachability verified. **Requires the DB migration in `SUPABASE-TASKS.md §0` to function** (species column).
+
+### Required first
+- [ ] Run `SUPABASE-TASKS.md §0` (adds `users.species` + CHECK; migrates existing rows to `rhino`)
+
+### Not yet confirmed
+- [ ] Onboarding step "CHOOSE YOUR SPECIES" shows 4 cards (rhino/otter/giraffe/cat) with cub sprite + tag; KEEP disabled until one is picked
+- [ ] Town map character is your species sprite at its stage (cub ≤ day25, sprout ≤ day50, beast after) — driven by `daysSince(start_date)`
+- [ ] Friends grid shows each friend's species sprite at their stage
+- [ ] Profile "SPECIES" card: stage strip (cub/sprout/beast) with current highlighted + picker; SAVE persists species
+- [ ] Tavern building uses `tavern-q1..q4` by day (q1 ≤18, q2 ≤37, q3 ≤56, q4 after)
+- [ ] Cottages appear as perimeter scenery
+- [ ] Dicebear fully gone (no `character.js` / `Avatar` / `CharacterBuilder`); `avatar_seed` unused (onboarding writes '')
+
+### Deviation from the spec (intentional)
+- Stage/tavern keyed off `daysSince(start_date)`, **not** `profile.current_day` (that column is never updated → always 1 → would freeze everyone at cub/q1).
+
+---
+
 ## Cross-cutting / deferred (not tied to one step)
 
 - [~] **Pixel-art sprites** — DONE as generated placeholders (`public/town/*.png`); town is now real sprites, not emoji. Optional upgrade: swap for nicer Kenney/Aseprite art (same file slots, no code change). See the "Town animation" section above.

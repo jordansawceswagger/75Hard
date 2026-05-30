@@ -5,10 +5,9 @@ import { useAuth } from '../lib/auth';
 import { todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
-import { DEFAULT_CONFIG, serializeConfig } from '../lib/character';
 import PixelCard from '../components/PixelCard';
 import PixelButton from '../components/PixelButton';
-import CharacterBuilder from '../components/CharacterBuilder';
+import SpeciesPicker from '../components/SpeciesPicker';
 
 export default function Onboarding() {
   const { session, setProfile } = useAuth();
@@ -16,7 +15,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState(todayISO());
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [species, setSpecies] = useState(null);
 
   async function finish() {
     sfx.play('day_done');
@@ -26,7 +25,8 @@ export default function Onboarding() {
         id: session.user.id,
         email: session.user.email,
         display_name: name,
-        avatar_seed: serializeConfig(config), // stores JSON trait config
+        species,
+        avatar_seed: '', // legacy column kept NOT NULL; no longer used
         start_date: startDate,
       })
       .select()
@@ -70,10 +70,11 @@ export default function Onboarding() {
 
   if (step === 1) {
     return (
-      <PixelCard title="BUILD YOUR SPRITE">
-        <CharacterBuilder
-          value={config}
-          onChange={setConfig}
+      <PixelCard title="CHOOSE YOUR SPECIES">
+        <p style={{ marginBottom: 12 }}>Pick your fighter. They evolve as you progress.</p>
+        <SpeciesPicker
+          value={species}
+          onChange={setSpecies}
           onConfirm={() => setStep(2)}
           confirmLabel="KEEP →"
         />

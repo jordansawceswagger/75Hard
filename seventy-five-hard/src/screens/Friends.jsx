@@ -4,8 +4,8 @@ import { useAuth } from '../lib/auth';
 import { todayISO, daysSince } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
+import { spriteUrl } from '../lib/species';
 import PixelCard from '../components/PixelCard';
-import Avatar from '../components/Avatar';
 import PixelProgress from '../components/PixelProgress';
 
 const REACTIONS = ['🔥', '💗'];
@@ -91,7 +91,14 @@ export default function Friends() {
           return (
             <PixelCard key={u.id}>
               <div style={{ textAlign: 'center', filter: isAfk ? 'grayscale(1)' : 'none' }}>
-                <Avatar config={u.avatar_seed} size={80} />
+                <img
+                  src={spriteUrl(u.species, daysSince(u.start_date))}
+                  alt={u.display_name}
+                  className="pixelated"
+                  width={80}
+                  height={80}
+                  style={{ display: 'block', margin: '0 auto' }}
+                />
                 <div style={{ marginTop: 8, fontFamily: "'Press Start 2P', monospace", fontSize: 10 }}>
                   {u.display_name}
                 </div>

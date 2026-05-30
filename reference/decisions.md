@@ -103,19 +103,26 @@ Each row has the choice, the reasoning, and the conditions under which it should
 - **Why:** Smooth photos clash with pixel UI. Pixelating them looks intentional.
 - **Re-open if:** never. This is locked.
 
-### Pixel sprites (Dicebear) instead of uploaded avatars
+### Species identity instead of Dicebear avatars (OVERRIDE, 2026-05-30)
+- **What changed:** Character identity is now **one of four species** (rhino/otter/giraffe/cat), stored in a new `users.species` column (CHECK-constrained). The whole Dicebear trait system is removed. Each species has 3 **evolution stages** — `cub → sprout → beast` — that advance with the run (cub ≤ day25, sprout ≤ day50, beast after), driven by `daysSince(start_date)`. The Tavern building also **builds up in 4 quarters** (`tavern-q1..q4`) across the 75 days, and decorative `cottage` houses dot the perimeter.
+- **Why:** "One source of identity per character." Discrete species + evolution is more legible and game-like than 280k trait combinations, and the art (Kenney-style 64/96px sprites in `public/town/`) is hand-authored and consistent.
+- **Implementation:** `src/lib/species.js` (SPECIES, getStage, spriteUrl, tavernUrl), `SpeciesPicker` replaces `CharacterBuilder` in onboarding + profile, `TownCharacter`/`Friends` render the species sprite. Deleted: `lib/character.js`, `components/Avatar.jsx`, `components/CharacterBuilder.jsx`. `avatar_seed` column kept (NOT NULL) but unused — onboarding writes `''`.
+- **Supersedes:** the four Dicebear decisions below (struck). Migration lives in `SUPABASE-TASKS.md §0`.
+- **Re-open if:** you want per-friend customization beyond species, or more than 4 species.
+
+### ~~Pixel sprites (Dicebear) instead of uploaded avatars~~ (superseded — species sprites)
 - **Why:** Free, consistent aesthetic, zero asset management, every friend gets unique sprite from name seed
 - **Re-open if:** a friend really wants their own avatar — add a single upload-override later
 
-### Full character customization (not just seed reroll)
+### ~~Full character customization (not just seed reroll)~~ (superseded — pick 1 of 4 species)
 - **Why:** "Reroll a random seed" is a slot machine, not a choice. Friends will compare characters — let them actually pick. 7 traits × ~6 options each = ~280k combinations, plenty of personality.
 - **Re-open if:** more than 4 of the 7 traits feel redundant; trim the list (don't add more)
 
-### Character config stored as JSON in `users.avatar_seed` (no schema change)
+### ~~Character config stored as JSON in `users.avatar_seed`~~ (superseded — `users.species` column)
 - **Why:** No migration. Column is text. JSON.parse on read, JSON.stringify on write. Old seed values fall back to default config.
 - **Re-open if:** you need to query characters by individual traits in SQL (you won't)
 
-### Dicebear API version pinned to 9.x
+### ~~Dicebear API version pinned to 9.x~~ (superseded — no Dicebear; local sprites)
 - **Why:** Trait IDs (`short01`, `variant05`) can change between major versions. Pin to a known-good version.
 - **Re-open if:** Dicebear 9.x is deprecated and the API stops responding
 

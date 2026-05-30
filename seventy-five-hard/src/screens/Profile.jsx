@@ -4,16 +4,16 @@ import { useAuth } from '../lib/auth';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
 import { daysSince } from '../lib/days';
-import { parseConfig, serializeConfig } from '../lib/character';
+import { STAGES, getStage } from '../lib/species';
 import PixelCard from '../components/PixelCard';
 import PixelButton from '../components/PixelButton';
-import CharacterBuilder from '../components/CharacterBuilder';
+import SpeciesPicker from '../components/SpeciesPicker';
 
 export default function Profile() {
   const { session, profile, setProfile } = useAuth();
   const [name, setName] = useState(profile?.display_name || '');
   const [sfxOn, setSfxOn] = useState(profile?.sfx_enabled ?? true);
-  const [config, setConfig] = useState(parseConfig(profile?.avatar_seed));
+  const [species, setSpecies] = useState(profile?.species || 'rhino');
   const [stats, setStats] = useState({ logs: 0, completed: 0 });
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function Profile() {
     sfx.play('complete');
     const { data, error } = await supabase
       .from('users')
-      .update({ display_name: name, avatar_seed: serializeConfig(config), sfx_enabled: sfxOn })
+      .update({ display_name: name, species, sfx_enabled: sfxOn })
       .eq('id', session.user.id)
       .select()
       .single();
@@ -66,8 +66,32 @@ export default function Profile() {
         <p>Started: <strong>{profile.start_date}</strong></p>
       </PixelCard>
 
-      <PixelCard title="SPRITE">
-        <CharacterBuilder value={config} onChange={setConfig} />
+      <PixelCard title="SPECIES">
+        {/* Evolution preview — current stage highlighted */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
+          {STAGES.map(stage => {
+            const active = getStage(currentDay) === stage;
+            return (
+              <div key={stage} style={{ textAlign: 'center', opacity: active ? 1 : 0.4 }}>
+                <img
+                  src={`/town/${species}-${stage}.png`}
+                  alt={stage}
+                  className="pixelated"
+                  width={56}
+                  height={56}
+                  style={{
+                    display: 'block',
+                    border: active ? '3px solid var(--peach)' : '3px solid transparent',
+                  }}
+                />
+                <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 7 }}>
+                  {stage.toUpperCase()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <SpeciesPicker value={species} onChange={setSpecies} />
       </PixelCard>
 
       <PixelCard title="SETTINGS">

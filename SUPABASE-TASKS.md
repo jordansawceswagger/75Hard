@@ -5,6 +5,28 @@ Ordered by priority. Each is copy-paste-ready.
 
 ---
 
+## 0. 🔴 RUN NOW — species column migration
+
+The app now uses a **species** identity (rhino/otter/giraffe/cat) instead of the
+old Dicebear avatar. Until this runs, `users` has no `species` column and
+onboarding / profile saves will fail. **SQL Editor → New query → Run:**
+
+```sql
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS species text;
+UPDATE public.users SET species = 'rhino' WHERE species IS NULL;   -- migrate existing rows
+ALTER TABLE public.users ALTER COLUMN species SET NOT NULL;
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_species_check;
+ALTER TABLE public.users ADD CONSTRAINT users_species_check
+  CHECK (species IN ('rhino', 'otter', 'giraffe', 'cat'));
+-- avatar_seed column is kept (still NOT NULL) but no longer used; onboarding writes ''.
+```
+
+After it runs: your existing profile becomes `rhino`; change it any time in the
+ME tab. (Sprite stage cub→sprout→beast and the tavern build are driven by your
+real day = `daysSince(start_date)`, not the stale `current_day` column.)
+
+---
+
 ## 1. 🔴 REQUIRED before inviting anyone — security hardening
 
 Without this, **anyone who finds the deployed URL can join and read everyone's

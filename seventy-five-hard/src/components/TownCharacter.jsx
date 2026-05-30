@@ -1,13 +1,11 @@
-import { avatarUrl, parseConfig } from '../lib/character';
+import { spriteUrl } from '../lib/species';
 
-// The walking character IS the player's Dicebear pixel-art avatar — the same art
-// as the customizable one in Profile/Party. It glides between tiles (CSS
-// transition) and bobs when idle. No directional walk frames (Dicebear avatars
-// are front-facing busts); the idle bob + movement give it life.
-export default function TownCharacter({ config, leftPx, topPx, sizePx, stepMs, idle = false }) {
+// The walking character is the player's species sprite at its current evolution
+// stage (cub/sprout/beast by day). Glides between tiles and bobs when idle.
+export default function TownCharacter({ species, day, leftPx, topPx, sizePx, stepMs, idle = false }) {
   return (
     <img
-      src={avatarUrl(parseConfig(config), sizePx)}
+      src={spriteUrl(species, day)}
       alt=""
       aria-hidden="true"
       className={idle ? 'pixelated character-idle' : 'pixelated'}

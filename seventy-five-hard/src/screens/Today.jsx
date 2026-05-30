@@ -5,9 +5,10 @@ import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
 import {
-  GRID, TILE, WORLD, TILES, BUILDINGS, START_CELL,
+  GRID, TILE, WORLD, TILES, BUILDINGS, COTTAGES, START_CELL,
   isWalkable, findPath,
 } from '../lib/townMap';
+import { tavernUrl } from '../lib/species';
 import PixelConfetti from '../components/PixelConfetti';
 import TownCharacter from '../components/TownCharacter';
 import BuildingModal from '../components/BuildingModal';
@@ -209,6 +210,22 @@ export default function Today() {
             )))}
           </div>
 
+          {/* Cottages (decorative scenery, non-interactive) */}
+          {COTTAGES.map((c, i) => (
+            <img
+              key={`cottage${i}`}
+              src="/town/cottage.png"
+              alt=""
+              className="pixelated"
+              style={{
+                position: 'absolute',
+                left: c.col * TILE, top: c.row * TILE,
+                width: TILE, height: TILE,
+                pointerEvents: 'none', zIndex: 3,
+              }}
+            />
+          ))}
+
           {/* Buildings */}
           {BUILDINGS.map(b => {
             const done = taskComplete[b.task](log);
@@ -225,7 +242,11 @@ export default function Today() {
                 }}
               >
                 <img
-                  src={`/town/${b.id === 'photo' ? 'photo-studio' : b.id}.png`}
+                  src={
+                    b.id === 'tavern' ? tavernUrl(dayNumber)
+                    : b.id === 'photo' ? '/town/photo-studio.png'
+                    : `/town/${b.id}.png`
+                  }
                   alt={b.label}
                   className={done ? 'pixelated building-done' : 'pixelated'}
                   style={{
@@ -252,7 +273,8 @@ export default function Today() {
 
           {/* Character */}
           <TownCharacter
-            config={profile?.avatar_seed}
+            species={profile?.species}
+            day={dayNumber}
             leftPx={charCell.col * TILE}
             topPx={charCell.row * TILE}
             sizePx={TILE}
