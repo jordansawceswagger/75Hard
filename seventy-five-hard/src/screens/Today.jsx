@@ -5,8 +5,8 @@ import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
 import {
-  GRID, TILE, WORLD, TILES, BUILDINGS, DECOR, START_CELL,
-  isWalkable, findPath, dirBetween,
+  GRID, TILE, WORLD, TILES, BUILDINGS, START_CELL,
+  isWalkable, findPath,
 } from '../lib/townMap';
 import PixelConfetti from '../components/PixelConfetti';
 import TownCharacter from '../components/TownCharacter';
@@ -51,8 +51,6 @@ export default function Today() {
 
   // Character walk state
   const [charCell, setCharCell] = useState(START_CELL);
-  const [dir, setDir] = useState('down');
-  const [frame, setFrame] = useState(0);
   const [isWalking, setIsWalking] = useState(false);
   const walkingRef = useRef(false);
   const timerRef = useRef(null);
@@ -134,20 +132,14 @@ export default function Today() {
     setIsWalking(true);
     sfx.play('tap');
     let i = 0;
-    let prev = charCell;
     const step = () => {
       if (i >= path.length) {
         walkingRef.current = false;
         setIsWalking(false);
-        setFrame(0);
         onArrive?.();
         return;
       }
-      const next = path[i];
-      setDir(dirBetween(prev, next));
-      setFrame(f => (f === 0 ? 1 : 0));
-      setCharCell(next);
-      prev = next;
+      setCharCell(path[i]);
       i++;
       timerRef.current = setTimeout(step, STEP_MS);
     };
@@ -155,10 +147,7 @@ export default function Today() {
   }
 
   function handleBuildingTap(b) {
-    walkTo(b.approach, () => {
-      setDir(dirBetween(b.approach, b));
-      setOpenTask(b);
-    });
+    walkTo(b.approach, () => setOpenTask(b));
   }
 
   function handleMapTap(e) {
@@ -220,22 +209,6 @@ export default function Today() {
             )))}
           </div>
 
-          {/* Decorations (scenery, non-interactive) */}
-          {DECOR.map((d, i) => (
-            <img
-              key={`d${i}`}
-              src={`/town/${d.sprite}.png`}
-              alt=""
-              className="pixelated"
-              style={{
-                position: 'absolute',
-                left: d.col * TILE, top: d.row * TILE,
-                width: TILE, height: TILE,
-                pointerEvents: 'none', zIndex: 3,
-              }}
-            />
-          ))}
-
           {/* Buildings */}
           {BUILDINGS.map(b => {
             const done = taskComplete[b.task](log);
@@ -252,7 +225,7 @@ export default function Today() {
                 }}
               >
                 <img
-                  src={`/town/${b.id}.png`}
+                  src={`/town/${b.id === 'photo' ? 'photo-studio' : b.id}.png`}
                   alt={b.label}
                   className={done ? 'pixelated building-done' : 'pixelated'}
                   style={{
@@ -279,8 +252,7 @@ export default function Today() {
 
           {/* Character */}
           <TownCharacter
-            dir={dir}
-            frame={frame}
+            config={profile?.avatar_seed}
             leftPx={charCell.col * TILE}
             topPx={charCell.row * TILE}
             sizePx={TILE}

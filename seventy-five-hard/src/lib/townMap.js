@@ -38,22 +38,7 @@ export const BUILDINGS = [
   { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 12, row: 13, approach: { col: 12, row: 12 } },
 ];
 
-// Non-interactive scenery (also obstacles, so the character paths around them).
-export const DECOR = [
-  { sprite: 'tree', col: 5,  row: 5 },
-  { sprite: 'tree', col: 10, row: 5 },
-  { sprite: 'bush', col: 11, row: 6 },
-  { sprite: 'tree', col: 5,  row: 10 },
-  { sprite: 'bush', col: 4,  row: 9 },
-  { sprite: 'tree', col: 10, row: 10 },
-  { sprite: 'bush', col: 9,  row: 11 },
-  { sprite: 'tree', col: 6,  row: 6 },
-];
-
-const BLOCKED = new Set([
-  ...BUILDINGS.map(b => `${b.col},${b.row}`),
-  ...DECOR.map(d => `${d.col},${d.row}`),
-]);
+const BLOCKED = new Set(BUILDINGS.map(b => `${b.col},${b.row}`));
 
 export function isWalkable(col, row) {
   return col >= 0 && col < GRID && row >= 0 && row < GRID && !BLOCKED.has(`${col},${row}`);

@@ -1,0 +1,7 @@
+Building + grass sprites: Kenney "Tiny Dungeon" pack — CC0 1.0 (public domain).
+https://kenney.nl  — attribution appreciated, not required.
+
+The walking character is the player's own Dicebear pixel-art avatar
+(https://dicebear.com, 9.x pixel-art style), rendered from their saved config.
+
+path.png is generated locally by scripts/gen_town_assets.py.

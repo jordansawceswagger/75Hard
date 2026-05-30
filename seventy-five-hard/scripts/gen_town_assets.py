@@ -181,18 +181,14 @@ BUILDINGS = {
 }
 
 def main():
+    # NOTE: buildings + grass are now Kenney Tiny Dungeon art (CC0), and the
+    # walking character is the player's Dicebear avatar (see TownCharacter.jsx).
+    # Only the dirt-path tile is still generated here, so this script no longer
+    # overwrites the Kenney/avatar art. The house()/tree()/make_character()
+    # helpers above are kept for reference / fallback only.
     os.makedirs('public/town', exist_ok=True)
-    save('grass.png', make_tile(GRASS, GRASS_D))
     save('path.png', make_tile(PATHC, PATH_D))
-    save('character.png', make_character())
-    save('tree.png', tree())
-    save('bush.png', bush())
-    for name, (kind, roof, accent) in BUILDINGS.items():
-        img = tree() if kind == 'tree' else house(roof, accent)
-        save(f'{name}.png', img)
-    print('wrote', len(os.listdir('public/town')), 'files to public/town/')
-    for f in sorted(os.listdir('public/town')):
-        print(' ', f, os.path.getsize(f'public/town/{f}'), 'bytes')
+    print('wrote path.png to public/town/')
 
 if __name__ == '__main__':
     main()
