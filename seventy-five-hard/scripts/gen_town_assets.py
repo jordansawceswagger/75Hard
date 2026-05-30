@@ -141,6 +141,16 @@ def tree():
                 px(img, x, y, GREEN if (x + y) % 3 else DGREEN)
     return img
 
+def bush():
+    img = canvas(48, 48)
+    GREEN = (120, 188, 120, 255)
+    DG = (88, 156, 88, 255)
+    for y in range(26, 44):
+        for x in range(8, 40):
+            if (x - 24) ** 2 + ((y - 42) ** 2) * 1.7 <= 15 ** 2:
+                px(img, x, y, GREEN if (x * 3 + y) % 4 else DG)
+    return img
+
 BUILDINGS = {
     'library': ('house', (139, 94, 60, 255),  (200, 182, 255, 255)),  # brown roof
     'photo':   ('house', (200, 182, 255, 255), (45, 45, 68, 255)),     # lavender roof
@@ -157,6 +167,8 @@ def main():
     save('grass.png', make_tile(GRASS, GRASS_D))
     save('path.png', make_tile(PATHC, PATH_D))
     save('character.png', make_character())
+    save('tree.png', tree())
+    save('bush.png', bush())
     for name, (kind, roof, accent) in BUILDINGS.items():
         img = tree() if kind == 'tree' else house(roof, accent)
         save(f'{name}.png', img)

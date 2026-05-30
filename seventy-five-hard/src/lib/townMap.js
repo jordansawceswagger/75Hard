@@ -1,19 +1,19 @@
-// Town grid: 10x10 tiles. Buildings are obstacles; the character routes around
-// them on the 4-neighbour grid, preferring dirt-path tiles (cheaper) so it walks
-// the "roads". Positions are {col,row}; the screen renders them as percentages.
+// Town world: 16x16 tiles, rendered at TILE px each into a fixed-size world that
+// the camera pans across (see Today.jsx). Buildings + decorations are obstacles;
+// the character routes around them on the 4-neighbour grid, preferring dirt-path
+// tiles (cheaper) so it walks the "roads". Positions are {col,row}.
 
-export const GRID = 10;
+export const GRID = 16;
+export const TILE = 48;            // px per tile
+export const WORLD = GRID * TILE;  // px
 
-// Dirt-path corridors. Everything else is grass. Both are walkable; path tiles
-// are cheaper for the router so the character prefers them.
+// Dirt-path avenues: 3 horizontal (rows 3,8,12) x 3 vertical (cols 2,7,13),
+// forming a connected road grid. Everything else is grass.
 const PATH = new Set();
 const addH = (row, c0, c1) => { for (let c = c0; c <= c1; c++) PATH.add(`${c},${row}`); };
 const addV = (col, r0, r1) => { for (let r = r0; r <= r1; r++) PATH.add(`${col},${r}`); };
-addV(2, 1, 8);
-addV(7, 1, 8);
-addH(4, 2, 7);
-addH(8, 2, 7);
-addV(5, 4, 8);
+addH(3, 2, 13); addH(8, 2, 13); addH(12, 2, 13);
+addV(2, 3, 12); addV(7, 3, 12); addV(13, 3, 12);
 
 export function tileType(col, row) {
   return PATH.has(`${col},${row}`) ? 'P' : 'G';
@@ -23,22 +23,37 @@ export const TILES = Array.from({ length: GRID }, (_, row) =>
   Array.from({ length: GRID }, (_, col) => tileType(col, row))
 );
 
-export const START_CELL = { col: 5, row: 6 };
+export const START_CELL = { col: 7, row: 8 };
 
-// task/label/id match the original emoji buildings; col/row place them on the
-// grid, approach is the walkable tile the character stands on to interact.
+// Buildings sit just off the avenues; `approach` is the road tile the character
+// stands on to interact (always on an avenue, so always reachable).
 export const BUILDINGS = [
-  { id: 'library', task: 'reading', label: 'LIBRARY',      emoji: '📚', col: 1, row: 1, approach: { col: 2, row: 1 } },
-  { id: 'photo',   task: 'photo',   label: 'PHOTO STUDIO', emoji: '📸', col: 8, row: 1, approach: { col: 7, row: 1 } },
-  { id: 'well',    task: 'water',   label: 'WELL',         emoji: '⛲', col: 1, row: 4, approach: { col: 2, row: 4 } },
-  { id: 'park',    task: 'outdoor', label: 'PARK',         emoji: '🌳', col: 8, row: 4, approach: { col: 7, row: 4 } },
-  { id: 'tavern',  task: 'alcohol', label: 'TAVERN',       emoji: '🍺', col: 4, row: 5, approach: { col: 4, row: 4 } },
-  { id: 'gym',     task: 'gym',     label: 'GYM',          emoji: '🏋️', col: 1, row: 8, approach: { col: 2, row: 8 } },
-  { id: 'kitchen', task: 'diet',    label: 'KITCHEN',      emoji: '🍳', col: 5, row: 9, approach: { col: 5, row: 8 } },
-  { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 8, row: 8, approach: { col: 7, row: 8 } },
+  { id: 'library', task: 'reading', label: 'LIBRARY',      emoji: '📚', col: 3,  row: 2,  approach: { col: 3,  row: 3 } },
+  { id: 'photo',   task: 'photo',   label: 'PHOTO STUDIO', emoji: '📸', col: 12, row: 2,  approach: { col: 12, row: 3 } },
+  { id: 'well',    task: 'water',   label: 'WELL',         emoji: '⛲', col: 1,  row: 8,  approach: { col: 2,  row: 8 } },
+  { id: 'park',    task: 'outdoor', label: 'PARK',         emoji: '🌳', col: 14, row: 8,  approach: { col: 13, row: 8 } },
+  { id: 'tavern',  task: 'alcohol', label: 'TAVERN',       emoji: '🍺', col: 8,  row: 7,  approach: { col: 8,  row: 8 } },
+  { id: 'gym',     task: 'gym',     label: 'GYM',          emoji: '🏋️', col: 3,  row: 13, approach: { col: 3,  row: 12 } },
+  { id: 'kitchen', task: 'diet',    label: 'KITCHEN',      emoji: '🍳', col: 8,  row: 13, approach: { col: 8,  row: 12 } },
+  { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 12, row: 13, approach: { col: 12, row: 12 } },
 ];
 
-const BLOCKED = new Set(BUILDINGS.map(b => `${b.col},${b.row}`));
+// Non-interactive scenery (also obstacles, so the character paths around them).
+export const DECOR = [
+  { sprite: 'tree', col: 5,  row: 5 },
+  { sprite: 'tree', col: 10, row: 5 },
+  { sprite: 'bush', col: 11, row: 6 },
+  { sprite: 'tree', col: 5,  row: 10 },
+  { sprite: 'bush', col: 4,  row: 9 },
+  { sprite: 'tree', col: 10, row: 10 },
+  { sprite: 'bush', col: 9,  row: 11 },
+  { sprite: 'tree', col: 6,  row: 6 },
+];
+
+const BLOCKED = new Set([
+  ...BUILDINGS.map(b => `${b.col},${b.row}`),
+  ...DECOR.map(d => `${d.col},${d.row}`),
+]);
 
 export function isWalkable(col, row) {
   return col >= 0 && col < GRID && row >= 0 && row < GRID && !BLOCKED.has(`${col},${row}`);

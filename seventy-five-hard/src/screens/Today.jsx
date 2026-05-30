@@ -4,13 +4,15 @@ import { useAuth } from '../lib/auth';
 import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
-import { GRID, TILES, BUILDINGS, START_CELL, isWalkable, findPath, dirBetween } from '../lib/townMap';
+import {
+  GRID, TILE, WORLD, TILES, BUILDINGS, DECOR, START_CELL,
+  isWalkable, findPath, dirBetween,
+} from '../lib/townMap';
 import PixelConfetti from '../components/PixelConfetti';
 import TownCharacter from '../components/TownCharacter';
 import BuildingModal from '../components/BuildingModal';
 
-const STEP_MS = 130;      // ms per tile of walking
-const CELL = 100 / GRID;  // one tile as a % of the map
+const STEP_MS = 130; // ms per tile of walking
 
 const EMPTY_LOG = {
   workout_1: false, workout_2_outdoor: false, diet: false,
@@ -18,7 +20,6 @@ const EMPTY_LOG = {
   no_alcohol: true, sleep_hours: 0,
 };
 
-// Map task slug -> which log field shows "complete" for that building
 const taskComplete = {
   gym:     log => log.workout_1,
   outdoor: log => log.workout_2_outdoor,
@@ -29,6 +30,15 @@ const taskComplete = {
   alcohol: log => log.no_alcohol,   // Tavern shows "lit" when AVOIDED (default true)
   sleep:   log => log.sleep_hours >= 8,
 };
+
+// Camera offset (px) that keeps the character centred, clamped to the world.
+function getCam(cell, vw) {
+  const cx = cell.col * TILE + TILE / 2;
+  const cy = cell.row * TILE + TILE / 2;
+  const max = Math.max(0, WORLD - vw);
+  const clamp = v => Math.max(0, Math.min(v, max));
+  return { camX: clamp(cx - vw / 2), camY: clamp(cy - vw / 2) };
+}
 
 export default function Today() {
   const { session, profile } = useAuth();
@@ -45,9 +55,21 @@ export default function Today() {
   const [frame, setFrame] = useState(0);
   const walkingRef = useRef(false);
   const timerRef = useRef(null);
-  const mapRef = useRef(null);
 
-  // Load today's log (works with or without a profile row yet)
+  // Camera viewport size (px)
+  const viewportRef = useRef(null);
+  const [vw, setVw] = useState(480);
+
+  useEffect(() => {
+    const measure = () => {
+      if (viewportRef.current) setVw(viewportRef.current.clientWidth);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  // Load today's log
   useEffect(() => {
     if (!session) return;
     (async () => {
@@ -62,7 +84,6 @@ export default function Today() {
     })();
   }, [session]);
 
-  // Watch for first all-complete -> confetti
   useEffect(() => {
     if (log.all_complete && !wasComplete.current) {
       sfx.play('day_done');
@@ -71,7 +92,6 @@ export default function Today() {
     }
   }, [log.all_complete]);
 
-  // Clear any pending walk timer on unmount
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
   async function update(patch) {
@@ -105,9 +125,8 @@ export default function Today() {
     if (data) setLog(data);
   }
 
-  // Walk the character cell-by-cell along the computed route, then onArrive().
   function walkTo(goal, onArrive) {
-    if (walkingRef.current) return; // one walk at a time
+    if (walkingRef.current) return;
     const path = findPath(charCell, goal);
     if (!path.length) { onArrive?.(); return; }
     walkingRef.current = true;
@@ -134,20 +153,23 @@ export default function Today() {
 
   function handleBuildingTap(b) {
     walkTo(b.approach, () => {
-      setDir(dirBetween(b.approach, b)); // face the building
+      setDir(dirBetween(b.approach, b));
       setOpenTask(b);
     });
   }
 
   function handleMapTap(e) {
-    if (!mapRef.current || walkingRef.current) return;
-    const rect = mapRef.current.getBoundingClientRect();
-    const col = Math.floor((e.clientX - rect.left) / rect.width * GRID);
-    const row = Math.floor((e.clientY - rect.top) / rect.height * GRID);
+    if (!viewportRef.current || walkingRef.current) return;
+    const rect = viewportRef.current.getBoundingClientRect();
+    const { camX, camY } = getCam(charCell, rect.width);
+    const col = Math.floor((e.clientX - rect.left + camX) / TILE);
+    const row = Math.floor((e.clientY - rect.top + camY) / TILE);
     if (isWalkable(col, row)) walkTo({ col, row });
   }
 
   if (loading) return <p>Loading...</p>;
+
+  const { camX, camY } = getCam(charCell, vw);
 
   return (
     <>
@@ -156,81 +178,115 @@ export default function Today() {
         <h1>DAY {dayNumber} / 75</h1>
       </div>
 
+      {/* Camera viewport (fixed window into the larger world) */}
       <div
-        ref={mapRef}
+        ref={viewportRef}
         onClick={handleMapTap}
         style={{
           position: 'relative',
-          width: 480,
-          maxWidth: '100%',
+          width: '100%',
+          maxWidth: WORLD,
           aspectRatio: '1 / 1',
           margin: '0 auto',
           border: '4px solid var(--ink)',
           overflow: 'hidden',
           cursor: 'pointer',
+          background: '#A8D88A',
         }}
       >
-        {/* Tile layer */}
+        {/* World layer — panned by the camera */}
         <div style={{
-          position: 'absolute', inset: 0,
-          display: 'grid',
-          gridTemplateColumns: `repeat(${GRID}, 1fr)`,
-          gridTemplateRows: `repeat(${GRID}, 1fr)`,
+          position: 'absolute', top: 0, left: 0,
+          width: WORLD, height: WORLD,
+          transform: `translate(${-camX}px, ${-camY}px)`,
+          transition: `transform ${STEP_MS}ms linear`,
         }}>
-          {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => (
-            <div key={`${c},${r}`} style={{
-              backgroundImage: `url(/town/${t === 'P' ? 'path' : 'grass'}.png)`,
-              backgroundSize: '100% 100%',
-              imageRendering: 'pixelated',
-            }} />
-          )))}
-        </div>
+          {/* Tiles */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'grid',
+            gridTemplateColumns: `repeat(${GRID}, ${TILE}px)`,
+            gridTemplateRows: `repeat(${GRID}, ${TILE}px)`,
+          }}>
+            {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => (
+              <div key={`${c},${r}`} style={{
+                backgroundImage: `url(/town/${t === 'P' ? 'path' : 'grass'}.png)`,
+                backgroundSize: '100% 100%',
+                imageRendering: 'pixelated',
+              }} />
+            )))}
+          </div>
 
-        {/* Buildings */}
-        {BUILDINGS.map(b => {
-          const done = taskComplete[b.task](log);
-          return (
-            <button
-              key={b.id}
-              onClick={(e) => { e.stopPropagation(); handleBuildingTap(b); }}
+          {/* Decorations (scenery, non-interactive) */}
+          {DECOR.map((d, i) => (
+            <img
+              key={`d${i}`}
+              src={`/town/${d.sprite}.png`}
+              alt=""
+              className="pixelated"
               style={{
                 position: 'absolute',
-                left: `${b.col * CELL}%`,
-                top: `${b.row * CELL}%`,
-                width: `${CELL}%`,
-                height: `${CELL}%`,
-                padding: 0, border: 'none', background: 'transparent',
-                cursor: 'pointer', zIndex: 4,
+                left: d.col * TILE, top: d.row * TILE,
+                width: TILE, height: TILE,
+                pointerEvents: 'none', zIndex: 3,
               }}
-            >
-              <img
-                src={`/town/${b.id}.png`}
-                alt={b.label}
-                className="pixelated"
-                style={{
-                  width: '100%', height: '100%', display: 'block',
-                  opacity: b.task === 'alcohol' && !done ? 0.45 : 1,
-                  filter: done ? 'drop-shadow(0 0 3px var(--mint)) drop-shadow(0 0 1px var(--mint))' : 'none',
-                }}
-              />
-              {done && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -2, fontSize: 12,
-                  textShadow: '0 0 2px #fff',
-                }}>✓</span>
-              )}
-              <span style={{
-                position: 'absolute', bottom: '100%', left: '50%',
-                transform: 'translateX(-50%)',
-                fontFamily: "'Press Start 2P', monospace", fontSize: 6,
-                whiteSpace: 'nowrap', color: 'var(--ink)',
-                background: 'rgba(255, 244, 224, 0.85)', padding: '0 2px',
-              }}>{b.label}</span>
-            </button>
-          );
-        })}
+            />
+          ))}
 
-        {/* DAY COMPLETE banner */}
+          {/* Buildings */}
+          {BUILDINGS.map(b => {
+            const done = taskComplete[b.task](log);
+            return (
+              <button
+                key={b.id}
+                onClick={(e) => { e.stopPropagation(); handleBuildingTap(b); }}
+                style={{
+                  position: 'absolute',
+                  left: b.col * TILE, top: b.row * TILE,
+                  width: TILE, height: TILE,
+                  padding: 0, border: 'none', background: 'transparent',
+                  cursor: 'pointer', zIndex: 4,
+                }}
+              >
+                <img
+                  src={`/town/${b.id}.png`}
+                  alt={b.label}
+                  className="pixelated"
+                  style={{
+                    width: '100%', height: '100%', display: 'block',
+                    opacity: b.task === 'alcohol' && !done ? 0.45 : 1,
+                    filter: done ? 'drop-shadow(0 0 3px var(--mint)) drop-shadow(0 0 1px var(--mint))' : 'none',
+                  }}
+                />
+                {done && (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -2, fontSize: 12,
+                    textShadow: '0 0 2px #fff',
+                  }}>✓</span>
+                )}
+                <span style={{
+                  position: 'absolute', bottom: '100%', left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontFamily: "'Press Start 2P', monospace", fontSize: 6,
+                  whiteSpace: 'nowrap', color: 'var(--ink)',
+                  background: 'rgba(255, 244, 224, 0.85)', padding: '0 2px',
+                }}>{b.label}</span>
+              </button>
+            );
+          })}
+
+          {/* Character */}
+          <TownCharacter
+            dir={dir}
+            frame={frame}
+            leftPx={charCell.col * TILE}
+            topPx={charCell.row * TILE}
+            sizePx={TILE}
+            stepMs={STEP_MS}
+          />
+        </div>
+
+        {/* DAY COMPLETE banner — fixed in the viewport, always visible */}
         {log.all_complete && (
           <div style={{
             position: 'absolute', top: '50%', left: '50%',
@@ -239,24 +295,13 @@ export default function Today() {
             padding: '16px 24px',
             fontFamily: "'Press Start 2P', monospace", fontSize: 14,
             boxShadow: '4px 4px 0 var(--shadow)',
-            pointerEvents: 'none', zIndex: 6,
+            pointerEvents: 'none', zIndex: 10,
           }}>
             DAY COMPLETE!
           </div>
         )}
-
-        {/* Character */}
-        <TownCharacter
-          dir={dir}
-          frame={frame}
-          leftPct={charCell.col * CELL}
-          topPct={charCell.row * CELL}
-          sizePct={CELL}
-          stepMs={STEP_MS}
-        />
       </div>
 
-      {/* Task modal */}
       {openTask && (
         <BuildingModal
           building={openTask}
