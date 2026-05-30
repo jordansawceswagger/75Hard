@@ -19,6 +19,9 @@ HAIR  = (91, 58, 41, 255)
 SHIRT = (200, 182, 255, 255)   # lavender
 PANTS = (60, 60, 90, 255)
 CREAM = (255, 244, 224, 255)
+WHITE = (255, 255, 255, 255)
+CHEEK = (255, 150, 150, 255)
+MOUTH = (150, 80, 80, 255)
 GRASS = (168, 216, 138, 255)
 GRASS_D = (140, 196, 112, 255)
 PATHC = (216, 196, 150, 255)
@@ -68,39 +71,54 @@ def make_tile(base, dark):
                 px(img, x, y, dark)
     return img
 
-# ---- character sheet (2 frames x 4 dirs, 16px cells) ----
+# ---- character sheet (2 frames x 4 dirs, 24px cells -> clearer face) ----
+CHAR = 24
+
 def draw_char(img, ox, oy, d, f):
-    # hair cap
-    rect(img, ox + 4, oy + 1, ox + 12, oy + 4, HAIR)
-    # head
-    rect(img, ox + 5, oy + 3, ox + 11, oy + 8, SKIN)
-    if d == 0:      # down — two eyes
-        px(img, ox + 6, oy + 5, INK); px(img, ox + 9, oy + 5, INK)
-    elif d == 1:    # up — back of head
-        rect(img, ox + 5, oy + 3, ox + 11, oy + 7, HAIR)
-    elif d == 2:    # left
-        px(img, ox + 6, oy + 5, INK)
-    elif d == 3:    # right
-        px(img, ox + 9, oy + 5, INK)
+    # hair: cap + sides framing the face
+    rect(img, ox + 6, oy + 2, ox + 18, oy + 6, HAIR)
+    rect(img, ox + 5, oy + 4, ox + 19, oy + 9, HAIR)
+    # face
+    rect(img, ox + 6, oy + 5, ox + 18, oy + 14, SKIN)
+
+    if d == 1:        # up — back of the head, hair covers the face
+        rect(img, ox + 5, oy + 4, ox + 19, oy + 13, HAIR)
+    elif d == 0:      # down — full face: two big eyes, cheeks, smile
+        rect(img, ox + 8, oy + 8, ox + 10, oy + 12, INK)    # left eye
+        rect(img, ox + 14, oy + 8, ox + 16, oy + 12, INK)   # right eye
+        px(img, ox + 8, oy + 8, WHITE); px(img, ox + 14, oy + 8, WHITE)  # eye shine
+        px(img, ox + 7, oy + 11, CHEEK); px(img, ox + 16, oy + 11, CHEEK)
+        rect(img, ox + 10, oy + 12, ox + 14, oy + 13, MOUTH)
+    elif d == 2:      # left profile — one eye + smile toward the left
+        rect(img, ox + 8, oy + 8, ox + 10, oy + 12, INK)
+        px(img, ox + 8, oy + 8, WHITE)
+        px(img, ox + 6, oy + 11, CHEEK)
+        rect(img, ox + 7, oy + 12, ox + 11, oy + 13, MOUTH)
+    elif d == 3:      # right profile
+        rect(img, ox + 14, oy + 8, ox + 16, oy + 12, INK)
+        px(img, ox + 14, oy + 8, WHITE)
+        px(img, ox + 17, oy + 11, CHEEK)
+        rect(img, ox + 13, oy + 12, ox + 17, oy + 13, MOUTH)
+
     # shirt
-    rect(img, ox + 5, oy + 8, ox + 11, oy + 12, SHIRT)
+    rect(img, ox + 6, oy + 14, ox + 18, oy + 19, SHIRT)
     # arms
-    rect(img, ox + 4, oy + 8, ox + 5, oy + 11, SKIN)
-    rect(img, ox + 11, oy + 8, ox + 12, oy + 11, SKIN)
+    rect(img, ox + 4, oy + 14, ox + 6, oy + 18, SKIN)
+    rect(img, ox + 18, oy + 14, ox + 20, oy + 18, SKIN)
     # legs
-    rect(img, ox + 5, oy + 12, ox + 7, oy + 15, PANTS)
-    rect(img, ox + 9, oy + 12, ox + 11, oy + 15, PANTS)
+    rect(img, ox + 7, oy + 19, ox + 11, oy + 23, PANTS)
+    rect(img, ox + 13, oy + 19, ox + 17, oy + 23, PANTS)
     # stepping foot
     if f == 0:
-        rect(img, ox + 5, oy + 15, ox + 7, oy + 16, PANTS)
+        rect(img, ox + 7, oy + 23, ox + 11, oy + 24, PANTS)
     else:
-        rect(img, ox + 9, oy + 15, ox + 11, oy + 16, PANTS)
+        rect(img, ox + 13, oy + 23, ox + 17, oy + 24, PANTS)
 
 def make_character():
-    img = canvas(32, 64)  # 2 cols x 4 rows of 16
+    img = canvas(CHAR * 2, CHAR * 4)  # 2 cols (frames) x 4 rows (dirs)
     for d in range(4):
         for f in range(2):
-            draw_char(img, f * 16, d * 16, d, f)
+            draw_char(img, f * CHAR, d * CHAR, d, f)
     return img
 
 # ---- buildings (48x48, transparent bg) ----
