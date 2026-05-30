@@ -53,6 +53,7 @@ export default function Today() {
   const [charCell, setCharCell] = useState(START_CELL);
   const [dir, setDir] = useState('down');
   const [frame, setFrame] = useState(0);
+  const [isWalking, setIsWalking] = useState(false);
   const walkingRef = useRef(false);
   const timerRef = useRef(null);
 
@@ -130,12 +131,14 @@ export default function Today() {
     const path = findPath(charCell, goal);
     if (!path.length) { onArrive?.(); return; }
     walkingRef.current = true;
+    setIsWalking(true);
     sfx.play('tap');
     let i = 0;
     let prev = charCell;
     const step = () => {
       if (i >= path.length) {
         walkingRef.current = false;
+        setIsWalking(false);
         setFrame(0);
         onArrive?.();
         return;
@@ -175,7 +178,7 @@ export default function Today() {
     <>
       <PixelConfetti trigger={confetti} />
       <div style={{ textAlign: 'center', marginBottom: 12 }}>
-        <h1>DAY {dayNumber} / 75</h1>
+        <h1 className={log.all_complete ? 'day-complete-pulse' : undefined}>DAY {dayNumber} / 75</h1>
       </div>
 
       {/* Camera viewport (fixed window into the larger world) */}
@@ -251,11 +254,10 @@ export default function Today() {
                 <img
                   src={`/town/${b.id}.png`}
                   alt={b.label}
-                  className="pixelated"
+                  className={done ? 'pixelated building-done' : 'pixelated'}
                   style={{
                     width: '100%', height: '100%', display: 'block',
                     opacity: b.task === 'alcohol' && !done ? 0.45 : 1,
-                    filter: done ? 'drop-shadow(0 0 3px var(--mint)) drop-shadow(0 0 1px var(--mint))' : 'none',
                   }}
                 />
                 {done && (
@@ -283,6 +285,7 @@ export default function Today() {
             topPx={charCell.row * TILE}
             sizePx={TILE}
             stepMs={STEP_MS}
+            idle={!isWalking}
           />
         </div>
 

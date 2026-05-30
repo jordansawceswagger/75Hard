@@ -9,7 +9,7 @@ export default function BuildingModal({ building, log, onUpdate, onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 16, zIndex: 1000,
     }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div onClick={e => e.stopPropagation()} className="modal-pop" style={{
         background: 'var(--cream)',
         border: '4px solid var(--ink)',
         padding: 20,

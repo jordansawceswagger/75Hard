@@ -3,10 +3,11 @@
 // transition tweens the glide between tiles while `frame` toggles the walk cycle.
 const DIR_ROW = { down: 0, up: 1, left: 2, right: 3 };
 
-export default function TownCharacter({ dir = 'down', frame = 0, leftPx, topPx, sizePx, stepMs }) {
+export default function TownCharacter({ dir = 'down', frame = 0, leftPx, topPx, sizePx, stepMs, idle = false }) {
   return (
     <div
       aria-hidden="true"
+      className={idle ? 'character-idle' : undefined}
       style={{
         position: 'absolute',
         left: leftPx,

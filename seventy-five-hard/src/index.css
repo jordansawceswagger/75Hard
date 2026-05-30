@@ -76,3 +76,48 @@ img.pixelated,
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
+
+/* === IDLE ANIMATIONS === */
+
+/* Character bobs in place when standing still */
+@keyframes idleBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+.character-idle {
+  animation: idleBob 0.8s steps(2) infinite;
+}
+
+/* Completed buildings sparkle softly */
+@keyframes buildingSparkle {
+  0%, 100% { box-shadow: 0 0 0 2px var(--mint); }
+  50%      { box-shadow: 0 0 0 3px var(--mint), 2px 2px 0 var(--peach); }
+}
+.building-done {
+  animation: buildingSparkle 1.6s ease-in-out infinite;
+}
+
+/* Modal slides up on open */
+@keyframes modalIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.modal-pop {
+  animation: modalIn 200ms steps(4);
+}
+
+/* Day counter pulses when DAY COMPLETE */
+@keyframes counterPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+.day-complete-pulse {
+  animation: counterPulse 600ms ease-in-out;
+}
+
+/* Press feedback on any tappable */
+.nes-btn:active,
+button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--shadow) !important;
+}
