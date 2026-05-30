@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
+import { toast } from '../lib/toast';
 import PixelConfetti from '../components/PixelConfetti';
 import BuildingModal from '../components/BuildingModal';
 
@@ -96,7 +97,11 @@ export default function Today() {
       )
       .select()
       .single();
-    if (error) { console.error('Save failed:', error.message); return; }
+    if (error) {
+      console.error('Save failed:', error.message);
+      toast.error('Save failed — not synced');
+      return;
+    }
     if (data) setLog(data);
   }
 

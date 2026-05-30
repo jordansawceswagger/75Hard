@@ -92,10 +92,10 @@ function TaskInput({ task, log, onUpdate }) {
       <>
         <p style={{ marginBottom: 8 }}>How many pages did you read today?</p>
         <input
-          type="number" min={0}
+          type="number" min={0} max={9999}
           className="nes-input"
           value={log.reading_pages}
-          onChange={e => onUpdate({ reading_pages: parseInt(e.target.value) || 0 })}
+          onChange={e => onUpdate({ reading_pages: Math.min(9999, Math.max(0, parseInt(e.target.value) || 0)) })}
           style={{ fontFamily: 'VT323, monospace', fontSize: 24 }}
         />
         <p style={{ marginTop: 8, fontSize: 16, opacity: 0.7 }}>Goal: 10+</p>
@@ -133,10 +133,10 @@ function TaskInput({ task, log, onUpdate }) {
       <>
         <p style={{ marginBottom: 8 }}>How many hours did you sleep last night?</p>
         <input
-          type="number" step="0.5" min={0}
+          type="number" step="0.5" min={0} max={24}
           className="nes-input"
           value={log.sleep_hours}
-          onChange={e => onUpdate({ sleep_hours: parseFloat(e.target.value) || 0 })}
+          onChange={e => onUpdate({ sleep_hours: Math.min(24, Math.max(0, parseFloat(e.target.value) || 0)) })}
           style={{ fontFamily: 'VT323, monospace', fontSize: 24 }}
         />
         <p style={{ marginTop: 8, fontSize: 16, opacity: 0.7 }}>Goal: 8+</p>

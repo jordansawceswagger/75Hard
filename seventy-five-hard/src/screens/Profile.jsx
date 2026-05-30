@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { sfx } from '../lib/sfx';
+import { toast } from '../lib/toast';
 import { daysSince } from '../lib/days';
 import { parseConfig, serializeConfig } from '../lib/character';
 import PixelCard from '../components/PixelCard';
@@ -31,14 +32,20 @@ export default function Profile() {
 
   async function save() {
     sfx.play('complete');
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .update({ display_name: name, avatar_seed: serializeConfig(config), sfx_enabled: sfxOn })
       .eq('id', session.user.id)
       .select()
       .single();
+    if (error) {
+      console.error('Profile save failed:', error.message);
+      toast.error("Couldn't save profile");
+      return;
+    }
     setProfile(data);
     sfx.setEnabled(sfxOn);
+    toast.success('Saved!');
   }
 
   async function signOut() {

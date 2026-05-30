@@ -103,16 +103,16 @@ prevent that.)
 
 Pick what you want; none are blockers.
 
-| # | Effort | Item | Notes |
-|---|--------|------|-------|
-| Q1 | S | **Surface save failures** | Today/Profile saves only `console.error` on failure (e.g. an RLS denial) — the UI shows nothing. A small toast/banner would make failures visible instead of silent. |
-| Q2 | S | **Reaction toggle-off** | Tapping your active reaction again does nothing. Could let it un-react (delete) so a tap toggles. Tiny UX win. |
-| Q3 | S | **Server-side numeric caps** | Add CHECK bounds on `reading_pages` (e.g. ≤ 9999) and `sleep_hours` (≤ 24) to stop fat-finger/garbage values. |
-| Q4 | S | **App icons** | `apple-touch-icon.png` / `pwa-*.png` missing → one console 404. Step 09/10 polish. |
-| Q5 | M | **Realtime reactions** | Enable Replication on `reactions` (Supabase → Database → Replication) for live cross-device updates. Works without it via the post-action refresh. |
-| Q6 | M | **Pixel-art sprites** | Town buildings/character are emoji placeholders. Swap points marked in `Today.jsx`. Intentional per `decisions.md`. |
-| Q7 | S | **Loading polish** | Several screens render a bare `Loading...`. Could use a pixel spinner/skeleton for consistency. |
-| Q8 | M | **Custom email domain** | Magic links send from your Gmail. Fine for 4 friends; a verified domain reduces spam-folder odds if you ever grow. |
+| # | Effort | Item | Status |
+|---|--------|------|--------|
+| Q1 | S | **Surface save failures** — toast bus (`lib/toast` + `ToastHost`); wired into Today/Profile/Friends/Onboarding saves | ✅ done |
+| Q2 | S | **Reaction toggle-off** — tapping your active reaction now removes it | ✅ done |
+| Q3 | S | **Numeric caps** — client clamps `reading_pages`≤9999 / `sleep_hours`≤24 | ✅ client done; DB CHECK in `SUPABASE-TASKS.md` §2 |
+| Q4 | S | **App icons** — `apple-touch-icon.png` / `pwa-*.png` missing → one console 404 | step 09/10 |
+| Q5 | M | **Realtime reactions** — Replication toggle | see `SUPABASE-TASKS.md` §3 |
+| Q6 | M | **Pixel-art sprites** — emoji placeholders, swap points marked in `Today.jsx` | deferred (decisions.md) |
+| Q7 | S | **Loading polish** — bare `Loading...` on a few screens | backlog |
+| Q8 | M | **Custom email domain** — links send from your Gmail | backlog |
 
 ---
 

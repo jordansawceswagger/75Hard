@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
+import { toast } from '../lib/toast';
 import { DEFAULT_CONFIG, serializeConfig } from '../lib/character';
 import PixelCard from '../components/PixelCard';
 import PixelButton from '../components/PixelButton';
@@ -32,6 +33,7 @@ export default function Onboarding() {
       .single();
     if (error) {
       console.error(error);
+      toast.error("Couldn't start — is your email on the invite list?");
       return;
     }
     setProfile(data);

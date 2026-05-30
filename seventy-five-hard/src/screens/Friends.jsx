@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { todayISO, daysSince } from '../lib/days';
 import { sfx } from '../lib/sfx';
+import { toast } from '../lib/toast';
 import PixelCard from '../components/PixelCard';
 import Avatar from '../components/Avatar';
 import PixelProgress from '../components/PixelProgress';
@@ -53,12 +54,29 @@ export default function Friends() {
   }
 
   async function react(log, emoji) {
-    sfx.play('complete');
-    await supabase.from('reactions').upsert({
-      log_id: log.id,
-      from_user_id: session.user.id,
-      emoji,
-    }, { onConflict: 'log_id,from_user_id' });
+    const existing = reactions[log.id]?.find(r => r.from_user_id === session.user.id);
+    let error;
+    if (existing && existing.emoji === emoji) {
+      // Tapping your active reaction again removes it (toggle off).
+      sfx.play('tap');
+      ({ error } = await supabase.from('reactions')
+        .delete()
+        .eq('log_id', log.id)
+        .eq('from_user_id', session.user.id));
+    } else {
+      // New reaction, or swap to the other emoji (upsert -> UPDATE on conflict).
+      sfx.play('complete');
+      ({ error } = await supabase.from('reactions').upsert({
+        log_id: log.id,
+        from_user_id: session.user.id,
+        emoji,
+      }, { onConflict: 'log_id,from_user_id' }));
+    }
+    if (error) {
+      console.error('Reaction failed:', error.message);
+      toast.error("Couldn't react");
+      return;
+    }
     // Refresh immediately so the UI updates even if realtime isn't enabled yet.
     loadAll();
   }
