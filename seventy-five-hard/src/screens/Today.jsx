@@ -201,13 +201,25 @@ export default function Today() {
             gridTemplateColumns: `repeat(${GRID}, ${TILE}px)`,
             gridTemplateRows: `repeat(${GRID}, ${TILE}px)`,
           }}>
-            {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => (
-              <div key={`${c},${r}`} style={{
-                backgroundImage: `url(/town/${t === 'P' ? 'path' : 'grass'}.png)`,
-                backgroundSize: '100% 100%',
-                imageRendering: 'pixelated',
-              }} />
-            )))}
+            {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => {
+              let style;
+              if (t === 'W') {
+                // River — impassable water
+                style = { background: '#5BC0DE' };
+              } else if (t === 'B') {
+                // Bridge — wooden planks with dark rails top & bottom
+                style = {
+                  background: 'repeating-linear-gradient(90deg,#A56A2C 0 8px,#B98341 8px 11px)',
+                  boxShadow: 'inset 0 4px 0 #6F4218, inset 0 -4px 0 #6F4218',
+                };
+              } else {
+                style = {
+                  backgroundImage: `url(/town/${t === 'P' ? 'path' : 'grass'}.png)`,
+                  backgroundSize: '100% 100%',
+                };
+              }
+              return <div key={`${c},${r}`} style={{ ...style, imageRendering: 'pixelated' }} />;
+            }))}
           </div>
 
           {/* Cottages (decorative scenery, non-interactive) */}

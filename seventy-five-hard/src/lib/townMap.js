@@ -1,48 +1,77 @@
 // Town world: 16x16 tiles, rendered at TILE px each into a fixed-size world that
-// the camera pans across (see Today.jsx). Buildings + decorations are obstacles;
-// the character routes around them on the 4-neighbour grid, preferring dirt-path
-// tiles (cheaper) so it walks the "roads". Positions are {col,row}.
+// the camera pans across (see Today.jsx). Buildings + decorations + the river are
+// obstacles; the character routes around them on the 4-neighbour grid, preferring
+// dirt-path tiles (cheaper) so it walks the "roads". Positions are {col,row}.
+//
+// A river winds top-to-bottom and splits the town into a west and an east bank.
+// It is impassable except at the single BRIDGE tile — half the tasks live across
+// the water, so the character routes over the bridge to reach them.
 
 export const GRID = 16;
 export const TILE = 48;            // px per tile
 export const WORLD = GRID * TILE;  // px
 
-// Dirt-path avenues: 3 horizontal (rows 3,8,12) x 3 vertical (cols 2,7,13),
-// forming a connected road grid. Everything else is grass.
+// ---- Roads -----------------------------------------------------------------
+// Dirt-path avenues on each bank, joined across the water by the bridge.
 const PATH = new Set();
 const addH = (row, c0, c1) => { for (let c = c0; c <= c1; c++) PATH.add(`${c},${row}`); };
 const addV = (col, r0, r1) => { for (let r = r0; r <= r1; r++) PATH.add(`${col},${r}`); };
-addH(3, 2, 13); addH(8, 2, 13); addH(12, 2, 13);
-addV(2, 3, 12); addV(7, 3, 12); addV(13, 3, 12);
+addH(3, 1, 8);  addH(7, 1, 9);  addH(12, 1, 8);   // west bank horizontals
+addH(3, 11, 14); addH(7, 11, 15); addH(12, 11, 14); // east bank horizontals
+addV(3, 3, 12); addV(7, 3, 12);                   // west verticals
+addV(13, 3, 12);                                  // east vertical
+
+// ---- River + bridge --------------------------------------------------------
+// One orthogonally-continuous band of water from the top edge to the bottom
+// edge, so the only way across is the bridge tile.
+const RIVER = new Set([
+  '10,0', '10,1', '10,2', '9,2', '9,3', '9,4', '9,5', '10,5', '10,6',
+  /* 10,7 is the BRIDGE (walkable) */
+  '10,8', '11,8', '11,9', '11,10', '11,11', '10,11',
+  '10,12', '10,13', '10,14', '10,15',
+]);
+const BRIDGE = '10,7';
 
 export function tileType(col, row) {
-  return PATH.has(`${col},${row}`) ? 'P' : 'G';
+  const k = `${col},${row}`;
+  if (k === BRIDGE) return 'B';            // bridge — walkable, walks like a road
+  if (RIVER.has(k)) return 'W';            // water — impassable
+  return PATH.has(k) ? 'P' : 'G';          // path / grass
 }
 
 export const TILES = Array.from({ length: GRID }, (_, row) =>
   Array.from({ length: GRID }, (_, col) => tileType(col, row))
 );
 
-export const START_CELL = { col: 7, row: 8 };
+export const START_CELL = { col: 7, row: 7 };  // west-bank road junction
 
-// Buildings sit just off the avenues; `approach` is the road tile the character
-// stands on to interact (always on an avenue, so always reachable).
+// ---- Buildings (interactive) -----------------------------------------------
+// Scattered across the interior and both banks. `approach` is the road tile the
+// character stands on to interact (always a path tile, so always reachable).
 export const BUILDINGS = [
-  { id: 'library', task: 'reading', label: 'LIBRARY',      emoji: '📚', col: 3,  row: 2,  approach: { col: 3,  row: 3 } },
+  // West bank
+  { id: 'library', task: 'reading', label: 'LIBRARY',      emoji: '📚', col: 6,  row: 2,  approach: { col: 6,  row: 3 } },
+  { id: 'gym',     task: 'gym',     label: 'GYM',          emoji: '🏋️', col: 2,  row: 6,  approach: { col: 3,  row: 6 } },
+  { id: 'kitchen', task: 'diet',    label: 'KITCHEN',      emoji: '🍳', col: 6,  row: 9,  approach: { col: 7,  row: 9 } },
+  { id: 'well',    task: 'water',   label: 'WELL',         emoji: '⛲', col: 4,  row: 11, approach: { col: 3,  row: 11 } },
+  // East bank (reached across the bridge)
   { id: 'photo',   task: 'photo',   label: 'PHOTO STUDIO', emoji: '📸', col: 12, row: 2,  approach: { col: 12, row: 3 } },
-  { id: 'well',    task: 'water',   label: 'WELL',         emoji: '⛲', col: 1,  row: 8,  approach: { col: 2,  row: 8 } },
-  { id: 'park',    task: 'outdoor', label: 'PARK',         emoji: '🌳', col: 14, row: 8,  approach: { col: 13, row: 8 } },
-  { id: 'tavern',  task: 'alcohol', label: 'TAVERN',       emoji: '🍺', col: 8,  row: 7,  approach: { col: 8,  row: 8 } },
-  { id: 'gym',     task: 'gym',     label: 'GYM',          emoji: '🏋️', col: 3,  row: 13, approach: { col: 3,  row: 12 } },
-  { id: 'kitchen', task: 'diet',    label: 'KITCHEN',      emoji: '🍳', col: 8,  row: 13, approach: { col: 8,  row: 12 } },
-  { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 12, row: 13, approach: { col: 12, row: 12 } },
+  { id: 'park',    task: 'outdoor', label: 'PARK',         emoji: '🌳', col: 14, row: 5,  approach: { col: 13, row: 5 } },
+  { id: 'tavern',  task: 'alcohol', label: 'TAVERN',       emoji: '🍺', col: 12, row: 8,  approach: { col: 12, row: 7 } },
+  { id: 'inn',     task: 'sleep',   label: 'INN',          emoji: '🛏️', col: 14, row: 13, approach: { col: 14, row: 12 } },
 ];
 
-// Decorative background houses on the perimeter (non-interactive, but solid).
+// ---- Decorative houses (non-interactive, but solid) ------------------------
 export const COTTAGES = [
-  { col: 1,  row: 0 },
-  { col: 14, row: 0 },
-  { col: 1,  row: 15 },
+  { col: 1,  row: 1 },
+  { col: 5,  row: 1 },
+  { col: 1,  row: 4 },
+  { col: 8,  row: 5 },
+  { col: 1,  row: 13 },
+  { col: 6,  row: 14 },
+  { col: 13, row: 1 },
+  { col: 15, row: 9 },
+  { col: 14, row: 14 },
 ];
 
 const BLOCKED = new Set([
@@ -51,11 +80,16 @@ const BLOCKED = new Set([
 ]);
 
 export function isWalkable(col, row) {
-  return col >= 0 && col < GRID && row >= 0 && row < GRID && !BLOCKED.has(`${col},${row}`);
+  if (col < 0 || col >= GRID || row < 0 || row >= GRID) return false;
+  if (tileType(col, row) === 'W') return false;        // river is impassable
+  return !BLOCKED.has(`${col},${row}`);
 }
 
 const KEY = (c, r) => `${c},${r}`;
-const enterCost = (c, r) => (tileType(c, r) === 'P' ? 1 : 3);
+const enterCost = (c, r) => {
+  const t = tileType(c, r);
+  return (t === 'P' || t === 'B') ? 1 : 3;             // roads + bridge are cheap
+};
 
 // A* on the 4-neighbour grid (path tiles cheaper). Returns the steps from start
 // (exclusive) to goal (inclusive), or [] if unreachable / already there.
