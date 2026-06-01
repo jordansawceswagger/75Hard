@@ -5,7 +5,7 @@ import { daysSince, todayISO } from '../lib/days';
 import { sfx } from '../lib/sfx';
 import { toast } from '../lib/toast';
 import {
-  GRID, TILE, WORLD, TILES, BUILDINGS, COTTAGES, START_CELL,
+  GRID, WORLD, TILES, BUILDINGS, COTTAGES, START_CELL,
   isWalkable, findPath,
 } from '../lib/townMap';
 import { tavernUrl } from '../lib/species';
@@ -32,15 +32,6 @@ const taskComplete = {
   sleep:   log => log.sleep_hours >= 8,
 };
 
-// Camera offset (px) that keeps the character centred, clamped to the world.
-function getCam(cell, vw) {
-  const cx = cell.col * TILE + TILE / 2;
-  const cy = cell.row * TILE + TILE / 2;
-  const max = Math.max(0, WORLD - vw);
-  const clamp = v => Math.max(0, Math.min(v, max));
-  return { camX: clamp(cx - vw / 2), camY: clamp(cy - vw / 2) };
-}
-
 export default function Today() {
   const { session, profile } = useAuth();
   const [log, setLog] = useState(EMPTY_LOG);
@@ -56,18 +47,8 @@ export default function Today() {
   const walkingRef = useRef(false);
   const timerRef = useRef(null);
 
-  // Camera viewport size (px)
+  // Viewport element — the world scales to fill it (no camera).
   const viewportRef = useRef(null);
-  const [vw, setVw] = useState(480);
-
-  useEffect(() => {
-    const measure = () => {
-      if (viewportRef.current) setVw(viewportRef.current.clientWidth);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
 
   // Load today's log
   useEffect(() => {
@@ -154,15 +135,12 @@ export default function Today() {
   function handleMapTap(e) {
     if (!viewportRef.current || walkingRef.current) return;
     const rect = viewportRef.current.getBoundingClientRect();
-    const { camX, camY } = getCam(charCell, rect.width);
-    const col = Math.floor((e.clientX - rect.left + camX) / TILE);
-    const row = Math.floor((e.clientY - rect.top + camY) / TILE);
+    const col = Math.floor((e.clientX - rect.left) / rect.width * GRID);
+    const row = Math.floor((e.clientY - rect.top) / rect.height * GRID);
     if (isWalkable(col, row)) walkTo({ col, row });
   }
 
   if (loading) return <p>Loading...</p>;
-
-  const { camX, camY } = getCam(charCell, vw);
 
   return (
     <>
@@ -171,7 +149,7 @@ export default function Today() {
         <h1 className={log.all_complete ? 'day-complete-pulse' : undefined}>DAY {dayNumber} / 75</h1>
       </div>
 
-      {/* Camera viewport (fixed window into the larger world) */}
+      {/* Viewport — the whole 16x16 world scales to fill this box */}
       <div
         ref={viewportRef}
         onClick={handleMapTap}
@@ -187,19 +165,16 @@ export default function Today() {
           background: '#A8D88A',
         }}
       >
-        {/* World layer — panned by the camera */}
+        {/* World layer — fills the viewport; children use % positioning */}
         <div style={{
-          position: 'absolute', top: 0, left: 0,
-          width: WORLD, height: WORLD,
-          transform: `translate(${-camX}px, ${-camY}px)`,
-          transition: `transform ${STEP_MS}ms linear`,
+          position: 'absolute', inset: 0,
         }}>
           {/* Tiles */}
           <div style={{
             position: 'absolute', inset: 0,
             display: 'grid',
-            gridTemplateColumns: `repeat(${GRID}, ${TILE}px)`,
-            gridTemplateRows: `repeat(${GRID}, ${TILE}px)`,
+            gridTemplateColumns: `repeat(${GRID}, 1fr)`,
+            gridTemplateRows: `repeat(${GRID}, 1fr)`,
           }}>
             {TILES.flatMap((rowArr, r) => rowArr.map((t, c) => {
               let style;
@@ -231,8 +206,10 @@ export default function Today() {
               className="pixelated"
               style={{
                 position: 'absolute',
-                left: c.col * TILE, top: c.row * TILE,
-                width: TILE, height: TILE,
+                left: `${(c.col / GRID) * 100}%`,
+                top: `${(c.row / GRID) * 100}%`,
+                width: `${100 / GRID}%`,
+                height: `${100 / GRID}%`,
                 pointerEvents: 'none', zIndex: 3,
               }}
             />
@@ -247,8 +224,10 @@ export default function Today() {
                 onClick={(e) => { e.stopPropagation(); handleBuildingTap(b); }}
                 style={{
                   position: 'absolute',
-                  left: b.col * TILE, top: b.row * TILE,
-                  width: TILE, height: TILE,
+                  left: `${(b.col / GRID) * 100}%`,
+                  top: `${(b.row / GRID) * 100}%`,
+                  width: `${100 / GRID}%`,
+                  height: `${100 / GRID}%`,
                   padding: 0, border: 'none', background: 'transparent',
                   cursor: 'pointer', zIndex: 4,
                 }}
@@ -287,9 +266,9 @@ export default function Today() {
           <TownCharacter
             species={profile?.species}
             day={dayNumber}
-            leftPx={charCell.col * TILE}
-            topPx={charCell.row * TILE}
-            sizePx={TILE}
+            leftPct={(charCell.col / GRID) * 100}
+            topPct={(charCell.row / GRID) * 100}
+            sizePct={100 / GRID}
             stepMs={STEP_MS}
             idle={!isWalking}
           />

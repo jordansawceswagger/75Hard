@@ -2,7 +2,7 @@ import { spriteUrl } from '../lib/species';
 
 // The walking character is the player's species sprite at its current evolution
 // stage (cub/sprout/beast by day). Glides between tiles and bobs when idle.
-export default function TownCharacter({ species, day, leftPx, topPx, sizePx, stepMs, idle = false }) {
+export default function TownCharacter({ species, day, leftPct, topPct, sizePct, stepMs, idle = false }) {
   return (
     <img
       src={spriteUrl(species, day)}
@@ -11,10 +11,11 @@ export default function TownCharacter({ species, day, leftPx, topPx, sizePx, ste
       className={idle ? 'pixelated character-idle' : 'pixelated'}
       style={{
         position: 'absolute',
-        left: leftPx,
-        top: topPx,
-        width: sizePx,
-        height: sizePx,
+        left: `${leftPct}%`,
+        top: `${topPct}%`,
+        width: `${sizePct}%`,
+        height: `${sizePct}%`,
+        imageRendering: 'pixelated',
         transition: `left ${stepMs}ms linear, top ${stepMs}ms linear`,
         pointerEvents: 'none',
         zIndex: 5,
